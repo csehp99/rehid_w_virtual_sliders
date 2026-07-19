@@ -13,49 +13,19 @@ void Slider::ReadValuesFromMCU()
 
 void Slider::GetConfigSettings()
 {
-    struct bounds
-    {
-        int16_t lowerbound3d;
-        int16_t upperbound3d;
-        int16_t lowerboundsnd;
-        int16_t upperboundsnd;
-    };
-    bounds bound;
-
-    cfguInit();
-    Result ret = CFG_GetConfigInfoBlk4(8, 0x120000u, &bound);
-    cfguExit();
-    if(ret != 0) *(u32*)0xFFFF1234 = 0x901;
-
-    m_lowerbound = bound.lowerbound3d + 8;
-    m_upperbound = bound.upperbound3d - 8;
+    // This is a virtual slider using the complete 0x00-0xFF range.
+    // Physical 3D-slider calibration is therefore not needed.
 }
 
-// We try to keep this function as close as possible to the function in the hid module
 float Slider::Normalize()
 {
-    static int32_t v1 = 0;
-    static float fval1 = 0.0f;
-    float fval2 = 0.0f;
-    const int32_t SOMECONST = 2; 
+    int32_t raw = m_rawstate;
 
-    int32_t diff = m_rawstate - v1;
-    if (diff < -SOMECONST)
-        v1 = m_rawstate + SOMECONST;
-    else if(diff > SOMECONST)
-        v1 = m_rawstate - SOMECONST;
+    if (raw < 0)
+        raw = 0;
 
-    if(m_lowerbound + SOMECONST >= v1)
-        fval2 = 0.0f;
-    else if(v1 >= m_upperbound - SOMECONST)
-        fval2 = 1.0f;
-    else
-        fval2 = (float)(v1 - m_lowerbound + SOMECONST) / (float)((m_upperbound - SOMECONST) + (m_lowerbound + SOMECONST));
+    if (raw > 0xFF)
+        raw = 0xFF;
 
-    fval1 = fval1 + ((fval2 - fval1) * 0.5f);
-
-    if(fval1 > (1.0f - 0.00001f)) fval1 = 1.0f;
-    else if(fval1 < 0.00001f) fval1 = 0.0f;
-
-    return fval1;
+    return static_cast<float>(raw) / 255.0f;
 }
