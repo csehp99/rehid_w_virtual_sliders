@@ -1,22 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
 source /etc/profile.d/devkit-env.sh
-
-apt-get update && apt-get install p7zip-full -y
-
-# Install ctrulib
-cd build_dir
-git clone https://github.com/smealum/ctrulib.git
-cd ctrulib/libctru
-make install release -j
-
-# Install makerom and ctrtool
 cd /build_dir
-export ctr_ver=16
-curl -LJO https://github.com/jakcron/Project_CTR/releases/download/v0."$ctr_ver"/makerom_0"$ctr_ver"_ctrtool.zip
-7z e makerom_0"$ctr_ver"_ctrtool.zip -o/usr/bin Ubuntu/makerom
-7z e makerom_0"$ctr_ver"_ctrtool.zip -o/usr/bin Ubuntu/ctrtool
-chmod +x /usr/bin/makerom && chmod +x /usr/bin/ctrtool
 
-#Build rehid
-make clean && make -j2
-mkdir 0004013000001D02
-mv 0004013000001D02.cxi 0004013000001D02/0004013000001D02.cxi
+# Download makerom and ctrtool.
+curl -fL \
+  -o makerom_016_ctrtool.zip \
+  "https://github.com/3DSGuy/Project_CTR/releases/download/v0.16/makerom_016_ctrtool.zip"
+
+# The devkitPro image already includes unzip.
+unzip -jo makerom_016_ctrtool.zip \
+  "Ubuntu/makerom" \
+  "Ubuntu/ctrtool" \
+  -d /usr/local/bin
+
+chmod +x /usr/local/bin/makerom
+chmod +x /usr/local/bin/ctrtool
+
+# Build rehid.
+make clean
+make -j2
+
+# Put the finished module where the artifact uploader expects it.
+mkdir -p 0004013000001D02
+mv 0004013000001D02.cxi \
+  0004013000001D02/0004013000001D02.cxi
